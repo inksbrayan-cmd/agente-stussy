@@ -1,0 +1,4 @@
+watchdog
+schedule
+psutil
+requests
