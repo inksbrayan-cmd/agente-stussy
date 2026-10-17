@@ -4,6 +4,7 @@ from modules.creador_proyectos import crear_proyecto
 from modules.monitor import mostrar_estado_sistema
 from modules.tareas import menu_tareas
 from modules.drive_organizer import menu_drive
+from modules.correo_resumen import menu_correos
 
 
 def saludar():
@@ -27,10 +28,11 @@ def menu():
         print("3. 📊 Ver estado del sistema")
         print("4. 📌 Gestionar tareas y pendientes")
         print("5. ☁️ Gestionar y organizar Google Drive")
-        print("6. ❌ Salir")
+        print("6. 📬 Resumen inteligente de correos")
+        print("7. ❌ Salir")
         print("=" * 55)
 
-        opcion = input("Selecciona una opción (1-6): ").strip()
+        opcion = input("Selecciona una opción (1-7): ").strip()
 
         if opcion == "1":
             print("\n📂 Ejecutando organizador de archivos...")
@@ -46,6 +48,8 @@ def menu():
         elif opcion == "5":
             menu_drive()
         elif opcion == "6":
+            menu_correos()
+        elif opcion == "7":
             print("\n👋 ¡Hasta luego, Brayan! STUSSY se despide.")
             break
         else:
