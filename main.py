@@ -4,6 +4,7 @@ from datetime import datetime
 from modules.organizador import organizar_descargas
 from modules.creador_proyectos import crear_proyecto
 from modules.monitor import mostrar_estado_sistema
+from modules.tareas import menu_tareas
 
 
 def saludar():
@@ -19,19 +20,20 @@ def saludar():
 def menu():
     while True:
         print("\n" + "=" * 55)
-        print("🤖  STUSSY - Agente Personal & Asistente de Desarrollo")
+        print("🤖 STUSSY - Agente Personal & Asistente de Desarrollo")
         print("=" * 55)
         print(f"{saludar()}\n")
         print("1. 📂 Organizar carpeta Descargas")
         print("2. 🚀 Crear nuevo proyecto con estructura estándar")
         print("3. 📊 Ver estado del sistema")
-        print("4. ❌ Salir")
+        print("4. 📌 Gestionar tareas y pendientes")
+        print("5. ❌ Salir")
         print("=" * 55)
 
-        opcion = input("Selecciona una opción (1-4): ").strip()
+        opcion = input("Selecciona una opción (1-5): ").strip()
 
         if opcion == "1":
-            print("\n🧹 Ejecutando organizador de archivos...")
+            print("\n📂 Ejecutando organizador de archivos...")
             organizar_descargas()
         elif opcion == "2":
             print("\n🚀 Ejecutando Creador de Proyectos...")
@@ -40,6 +42,8 @@ def menu():
             print("\n📊 Ejecutando Monitor del Sistema...")
             mostrar_estado_sistema()
         elif opcion == "4":
+            menu_tareas()
+        elif opcion == "5":
             print("\n👋 ¡Hasta luego, Brayan! STUSSY se despide.")
             break
         else:
