@@ -2,6 +2,8 @@ import os
 import sys
 from datetime import datetime
 from modules.organizador import organizar_descargas
+from modules.creador_proyectos import crear_proyecto
+from modules.monitor import mostrar_estado_sistema
 
 
 def saludar():
@@ -32,9 +34,11 @@ def menu():
             print("\n🧹 Ejecutando organizador de archivos...")
             organizar_descargas()
         elif opcion == "2":
-            print("\n🚀 Próximamente: Creador de proyectos...")
+            print("\n🚀 Ejecutando Creador de Proyectos...")
+            crear_proyecto()
         elif opcion == "3":
-            print("\n📊 Próximamente: Monitor de sistema...")
+            print("\n📊 Ejecutando Monitor del Sistema...")
+            mostrar_estado_sistema()
         elif opcion == "4":
             print("\n👋 ¡Hasta luego, Brayan! STUSSY se despide.")
             break
