@@ -5,17 +5,20 @@ from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 
-# Alcances (Scopes) requeridos para leer correos en Gmail (lectura únicamente)
+# Alcances (Scopes) requeridos para Google Drive y lectura de Gmail
 SCOPES = [
     "https://www.googleapis.com/auth/drive",
     "https://www.googleapis.com/auth/gmail.readonly",
 ]
 
 
-def autenticar_gmail():
-    """Maneja la autenticación OAuth 2.0 para la API de Gmail."""
+def autenticar_gmail(cuenta_personalizada=None):
+    """Maneja la autenticación OAuth 2.0 permitiendo separar cuentas mediante tokens independientes."""
     creds = None
-    token_path = "token.json"
+    # Si es 'teinco', usará 'token_teinco.json'; de lo contrario, el 'token.json' personal
+    token_path = (
+        f"token_{cuenta_personalizada}.json" if cuenta_personalizada else "token.json"
+    )
     creds_path = "credentials.json"
 
     if os.path.exists(token_path):
@@ -41,19 +44,23 @@ def autenticar_gmail():
     return build("gmail", "v1", credentials=creds)
 
 
-def obtener_resumen_correos(max_resultados=5):
-    """Consulta y muestra un resumen de los últimos correos no leídos."""
+def obtener_resumen_correos(max_resultados=5, cuenta_personalizada=None):
+    """Consulta y muestra un resumen de los últimos correos no leídos de la cuenta seleccionada."""
+    nombre_cuenta = (
+        "TEINCO (Universidad)" if cuenta_personalizada == "teinco" else "Personal"
+    )
+
     print("\n" + "=" * 55)
-    print("📬 STUSSY - RESUMEN INTELIGENTE DE CORREOS (GMAIL)")
+    print(f"📬 STUSSY - RESUMEN DE GMAIL ({nombre_cuenta.upper()})")
     print("=" * 55)
 
-    service = autenticar_gmail()
+    service = autenticar_gmail(cuenta_personalizada=cuenta_personalizada)
     if not service:
         print("❌ No se pudo conectar con el servicio de Gmail.")
         return
 
     try:
-        # Consultar correos no leídos en la bandeja de entrada
+        # Consultar correos no leídos en la bandeja de entrada primaria
         results = (
             service.users()
             .messages()
@@ -67,7 +74,7 @@ def obtener_resumen_correos(max_resultados=5):
 
         if not messages:
             print(
-                "\n✨ ¡Excelente! No tienes correos no leídos en tu bandeja principal."
+                f"\n✨ ¡Excelente! No tienes correos no leídos en tu bandeja {nombre_cuenta}."
             )
             print("=" * 55)
             return
@@ -96,7 +103,6 @@ def obtener_resumen_correos(max_resultados=5):
                 elif name == "date":
                     fecha = header.get("value", "")[:16]
 
-            # Recortar fragmento del mensaje si existe
             snippet = msg_data.get("snippet", "Sin vista previa")
 
             print(f"  {idx}. 📌 Asunto: {asunto}")
@@ -115,20 +121,23 @@ def obtener_resumen_correos(max_resultados=5):
 
 
 def menu_correos():
-    """Submenú interactivo para el resumen de correos."""
+    """Submenú interactivo para elegir entre las cuentas de correo."""
     while True:
-        print("\n" + "=" * 40)
-        print("📬 STUSSY - RESUMEN DE CORREOS")
-        print("=" * 40)
-        print("1. 📥 Ver correos no leídos recientes")
-        print("2. 🔙 Volver al menú principal")
-        print("=" * 40)
+        print("\n" + "=" * 45)
+        print("📬 STUSSY - GESTIÓN MULTI-CUENTA DE GMAIL")
+        print("=" * 45)
+        print("1. 📥 Ver correos cuenta Personal")
+        print("2. 🎓 Ver correos cuenta TEINCO (Universidad)")
+        print("3. 🔙 Volver al menú principal")
+        print("=" * 45)
 
-        opcion = input("Selecciona una opción (1-2): ").strip()
+        opcion = input("Selecciona una opción (1-3): ").strip()
 
         if opcion == "1":
-            obtener_resumen_correos()
+            obtener_resumen_correos(cuenta_personalizada=None)
         elif opcion == "2":
+            obtener_resumen_correos(cuenta_personalizada="teinco")
+        elif opcion == "3":
             break
         else:
             print("⚠️ Opción no válida.")
