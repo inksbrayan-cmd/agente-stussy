@@ -1,4 +1,5 @@
 import os
+import time
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
@@ -64,7 +65,7 @@ def limpiar_spam_y_promociones(cuenta_personalizada=None):
         results = (
             service.users()
             .messages()
-            .list(userId="me", q=query, maxResults=10)
+            .list(userId="me", q=query, maxResults=50)
             .execute()
         )
 
@@ -125,13 +126,14 @@ def limpiar_spam_y_promociones(cuenta_personalizada=None):
                 # Mover a la papelera (trash) en lugar de borrar permanentemente (delete)
                 service.users().messages().trash(userId="me", id=item["id"]).execute()
                 print(f"   ✔ Enviado a papelera: {item['asunto'][:40]}...")
+                time.sleep(0.5)
             print("\n✨ ¡Limpieza completada de forma segura!")
         else:
             print(
                 "\n❌ Operación cancelada por el usuario. Ningún correo fue modificado."
             )
 
-        print("=" * 60)
+        print("=" * 68)
 
     except Exception as e:
         print(f"⚠️ Error durante el proceso de limpieza: {e}")

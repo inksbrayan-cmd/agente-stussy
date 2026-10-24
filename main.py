@@ -9,6 +9,7 @@ from modules.correo_resumen import menu_correos
 from modules.limpiador_inteligente import menu_limpieza
 from modules.gestor_adjuntos import menu_adjuntos
 from modules.gestor_maestro import menu_estudio_global
+from modules.organizador_correos import menu_organizador_correos
 
 
 def saludar_usuario():
@@ -35,7 +36,7 @@ def menu():
         print("5. ☁️ Gestionar y organizar Google Drive")
         print("6. 📬 Resumen inteligente de correos")
         print("7. 🧹 Limpieza segura de Spam y Promociones")
-        print("8. 📎 Gestionar adjuntos y subir a Drive")
+        print("8. 🏷️ Categorizar y etiquetar correos automáticamente")
         print("9. 🏛️ Control total de estudio y historial global")
         print("10. ❌ Salir")
         print("=" * 55)
@@ -60,7 +61,7 @@ def menu():
         elif opcion == "7":
             menu_limpieza()
         elif opcion == "8":
-            menu_adjuntos()
+            menu_organizador_correos()
         elif opcion == "9":
             menu_estudio_global()
         elif opcion == "10":
