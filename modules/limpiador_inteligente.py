@@ -1,166 +1,50 @@
 import os
-import time
-from google.auth.transport.requests import Request
-from google.oauth2.credentials import Credentials
-from google_auth_oauthlib.flow import InstalledAppFlow
-from googleapiclient.discovery import build
-
-SCOPES = [
-    "https://www.googleapis.com/auth/drive",
-    "https://www.googleapis.com/auth/gmail.modify",  # Requerido para mover a la papelera o modificar etiquetas
-]
+import subprocess
+import shutil
 
 
-def autenticar_gmail(cuenta_personalizada=None):
-    """Maneja la autenticación OAuth 2.0 con permisos de modificación para Gmail."""
-    creds = None
-    token_path = (
-        f"token_{cuenta_personalizada}.json" if cuenta_personalizada else "token.json"
-    )
-    creds_path = "credentials.json"
+def limpiar_sistema():
+    """Ejecuta tareas de limpieza de archivos temporales y caché del sistema."""
+    reporte = []
 
-    if os.path.exists(token_path):
-        creds = Credentials.from_authorized_user_file(token_path, SCOPES)
+    # 1. Limpiar caché del usuario (~/.cache) de carpetas temporales conocidas
+    user_cache = os.path.expanduser("~/.cache")
+    carpetas_limpiar = ["thumbnails", "pip", "tmp"]
 
-    if not creds or not creds.valid:
-        if creds and creds.expired and creds.refresh_token:
+    bytes_liberados = 0
+    for carpeta in carpetas_limpiar:
+        ruta = os.path.join(user_cache, carpeta)
+        if os.path.exists(ruta):
             try:
-                creds.refresh(Request())
-            except Exception:
-                creds = None
+                for root, dirs, files in os.walk(ruta):
+                    for f in files:
+                        fp = os.path.join(root, f)
+                        bytes_liberados += os.path.getsize(fp)
+                shutil.rmtree(ruta)
+                os.makedirs(ruta, exist_ok=True)
+            except Exception as e:
+                print(f"No se pudo limpiar {ruta}: {e}")
 
-        if not creds:
-            if not os.path.exists(creds_path):
-                print(f"\n⚠️ No se encontró el archivo '{creds_path}'.")
-                return None
-            flow = InstalledAppFlow.from_client_secrets_file(creds_path, SCOPES)
-            creds = flow.run_local_server(port=0)
+    mb_liberados = round(bytes_liberados / (1024 * 1024), 2)
+    reporte.append(f"🧹 Caché de usuario: ~{mb_liberados} MB liberados")
 
-        with open(token_path, "w") as token:
-            token.write(creds.to_json())
-
-    return build("gmail", "v1", credentials=creds)
-
-
-def limpiar_spam_y_promociones(cuenta_personalizada=None):
-    """Busca correos de promociones, spam o sospechosos y pide confirmación S/N antes de borrarlos."""
-    nombre_cuenta = (
-        "TEINCO (Universidad)" if cuenta_personalizada == "teinco" else "Personal"
-    )
-
-    print("\n" + "=" * 60)
-    print(
-        f"🧹 STUSSY - LIMPIEZA SEGURA DE SPAM Y PROMOCIONES ({nombre_cuenta.upper()})"
-    )
-    print("=" * 60)
-
-    service = autenticar_gmail(cuenta_personalizada=cuenta_personalizada)
-    if not service:
-        print("❌ No se pudo conectar con el servicio de Gmail.")
-        return
-
+    # 2. Limpiar paquetes huérfanos y caché de APT (requiere privilegios o autoclean de usuario)
     try:
-        # Consulta para buscar correos en categorías de promociones o con términos sospechosos comunes
-        query = "category:promotions OR label:spam"
-        results = (
-            service.users()
-            .messages()
-            .list(userId="me", q=query, maxResults=50)
-            .execute()
-        )
+        cmd = ["sudo", "apt-get", "autoclean", "-y"]
+        subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        reporte.append("📦 Caché de paquetes APT limpiada")
+    except Exception:
+        pass
 
-        messages = results.get("messages", [])
-
-        if not messages:
-            print(
-                f"\n✨ ¡Excelente! No se encontraron correos de spam o promociones masivas en {nombre_cuenta}."
-            )
-            print("=" * 60)
-            return
-
-        print(f"\n🔍 Se encontraron {len(messages)} correos candidatos a limpieza:\n")
-
-        mensajes_a_procesar = []
-
-        for idx, msg in enumerate(messages, 1):
-            msg_data = (
-                service.users()
-                .messages()
-                .get(userId="me", id=msg["id"], format="full")
-                .execute()
-            )
-            headers = msg_data.get("payload", {}).get("headers", [])
-
-            asunto = "Sin Asunto"
-            remitente = "Desconocido"
-
-            for header in headers:
-                name = header.get("name", "").lower()
-                if name == "subject":
-                    asunto = header.get("value", "")
-                elif name == "from":
-                    remitente = header.get("value", "")
-
-            snippet = msg_data.get("snippet", "Sin vista previa")
-
-            print(f"  {idx}. 📌 Asunto: {asunto}")
-            print(f"     👤 De: {remitente}")
-            print(f"     💬 Vista previa: {snippet[:75]}...\n")
-
-            mensajes_a_procesar.append(
-                {"id": msg["id"], "asunto": asunto, "remitente": remitente}
-            )
-
-        print("-" * 60)
-        print("🛡️ MODO DE SEGURIDAD ACTIVADO: STUSSY NUNCA ELIMINA AUTOMÁTICAMENTE.")
-
-        confirmacion = (
-            input("¿Deseas enviar estos correos listados a la papelera? (S/N): ")
-            .strip()
-            .lower()
-        )
-
-        if confirmacion == "s":
-            print("\n🗑️ Moviendo correos seleccionados a la papelera...")
-            for item in mensajes_a_procesar:
-                # Mover a la papelera (trash) en lugar de borrar permanentemente (delete)
-                service.users().messages().trash(userId="me", id=item["id"]).execute()
-                print(f"   ✔ Enviado a papelera: {item['asunto'][:40]}...")
-                time.sleep(0.5)
-            print("\n✨ ¡Limpieza completada de forma segura!")
-        else:
-            print(
-                "\n❌ Operación cancelada por el usuario. Ningún correo fue modificado."
-            )
-
-        print("=" * 68)
-
-    except Exception as e:
-        print(f"⚠️ Error durante el proceso de limpieza: {e}")
+    return "\n".join(reporte)
 
 
-def menu_limpieza():
-    """Submenú interactivo para elegir la cuenta a limpiar."""
-    while True:
-        print("\n" + "=" * 50)
-        print("🧹 STUSSY - GESTIÓN DE LIMPIEZA Y SEGURIDAD")
-        print("=" * 50)
-        print("1. 🧹 Limpiar Spam y Promociones (Cuenta Personal)")
-        print("2. 🧹 Limpiar Spam y Promociones (Cuenta TEINCO)")
-        print("3. 🔙 Volver al menú principal")
-        print("=" * 50)
-
-        opcion = input("Selecciona una opción (1-3): ").strip()
-
-        if opcion == "1":
-            limpiar_spam_y_promociones(cuenta_personalizada=None)
-        elif opcion == "2":
-            limpiar_spam_y_promociones(cuenta_personalizada="teinco")
-        elif opcion == "3":
-            break
-        else:
-            print("⚠️ Opción no válida.")
-
-
-if __name__ == "__main__":
-    menu_limpieza()
+def obtener_espacio_disco():
+    """Retorna el espacio libre y total del disco principal."""
+    try:
+        total, used, free = shutil.disk_usage("/")
+        gb_libre = round(free / (1024**3), 2)
+        gb_total = round(total / (1024**3), 2)
+        return f"Espacio libre: {gb_libre} GB de {gb_total} GB"
+    except Exception:
+        return "No se pudo obtener la información del disco."
